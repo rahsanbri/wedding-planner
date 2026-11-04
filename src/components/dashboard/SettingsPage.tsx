@@ -15,6 +15,7 @@ import {
   Download,
   Flower2,
   Heart,
+  Key,
   MapPin,
   Phone,
   RefreshCw,
@@ -256,6 +257,9 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
   const [guestTargetInput, setGuestTargetInput] = useState(
     String(data.settings.guestTarget),
   );
+  const [accessKeyInput, setAccessKeyInput] = useState(
+    data.settings.accessKey || "AM2027",
+  );
   const [saved, setSaved] = useState(false);
 
   // 4 Main Events Form State
@@ -286,6 +290,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
       targetDate,
       targetDateLabel: formatWeddingDate(targetDate),
       guestTarget: Math.round(guestTarget),
+      accessKey: accessKeyInput.trim() || "AM2027",
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
@@ -308,6 +313,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
       resetData();
       setTargetDateInput(weddingSettings.targetDate.slice(0, 10));
       setGuestTargetInput(String(weddingSettings.guestTarget));
+      setAccessKeyInput(weddingSettings.accessKey || "AM2027");
       setSaved(false);
       setImportStatus(null);
     }
@@ -345,6 +351,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
     replaceData(result.data);
     setTargetDateInput(result.data.settings.targetDate.slice(0, 10));
     setGuestTargetInput(String(result.data.settings.guestTarget));
+    setAccessKeyInput(result.data.settings.accessKey || "AM2027");
     setImportStatus({
       type: "success",
       message: `Data berhasil diimpor: ${result.data.guests.length} tamu, ${result.data.budgetItems.length} pos anggaran, ${result.data.timeline.length} agenda.`,
@@ -482,6 +489,33 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
             />
             <p className="text-[10.5px] text-[#6f5a49]">
               Dipakai di hero banner dan status tamu.
+            </p>
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2 pt-2 border-t border-[#f0e6d8]">
+            <label
+              htmlFor="access-key"
+              className="text-[11px] font-bold uppercase tracking-wider text-[#6f5a49] flex items-center gap-1.5"
+            >
+              <Key className="w-3.5 h-3.5 text-[#c98858]" />
+              Kode Akses Bersama (Wedding Passcode / PIN Key)
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2.5 items-start sm:items-center">
+              <input
+                id="access-key"
+                type="text"
+                value={accessKeyInput}
+                onChange={(event) => setAccessKeyInput(event.target.value.toUpperCase())}
+                required
+                placeholder="Contoh: AM2027"
+                className="w-full sm:max-w-xs px-3.5 py-2.5 rounded-xl bg-[#fbf7f2] border border-[#ede4d8] text-xs font-mono font-bold tracking-wider text-[#3a281c] focus:outline-hidden focus:border-[#c98858]"
+              />
+              <span className="text-[11px] text-[#6f5a49]">
+                Dibagikan ke Mempelai, Keluarga, & Tim WO untuk mengakses data yang sama.
+              </span>
+            </div>
+            <p className="text-[10px] sm:text-[10.5px] text-[#8c7a6d]">
+              Format fleksibel & otomatis dinormalisasi (contoh: <code className="bg-[#f0e6d8] px-1 py-0.5 rounded text-[#3a281c]">am2027</code>, <code className="bg-[#f0e6d8] px-1 py-0.5 rounded text-[#3a281c]">AM2027</code>, atau <code className="bg-[#f0e6d8] px-1 py-0.5 rounded text-[#3a281c]">A&M2027</code>).
             </p>
           </div>
         </div>

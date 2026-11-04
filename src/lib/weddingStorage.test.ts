@@ -83,6 +83,7 @@ describe("mergeWeddingData", () => {
       targetDate: "2028-01-01T00:00:00+07:00",
       targetDateLabel: "1 Januari 2028",
       guestTarget: 500,
+      accessKey: "AM2027",
     });
 
     const partial = mergeWeddingData(base, { settings: { guestTarget: 600 } });

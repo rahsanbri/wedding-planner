@@ -18,6 +18,9 @@ import { ReportPage } from "@/components/dashboard/ReportPage";
 import { CommandPalette } from "@/components/dashboard/CommandPalette";
 import { eventsDatabase } from "@/data/weddingEvents";
 import { useWeddingData } from "@/components/providers/WeddingDataProvider";
+import { getStoredAuth, saveAuth, clearAuth } from "@/lib/auth";
+import type { AuthUser } from "@/lib/auth";
+import { WeddingAuthGate } from "@/components/auth/WeddingAuthGate";
 
 const supportingViews = [
   "budget",
@@ -30,6 +33,10 @@ const supportingViews = [
 ];
 
 export default function WeddingMasterDashboard() {
+  const { data } = useWeddingData();
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getStoredAuth());
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
+
   const [currentView, setCurrentView] = useState("overview");
   const [selectedDrawerEventId, setSelectedDrawerEventId] = useState<string | null>(null);
   const [activeEventDetailId, setActiveEventDetailId] = useState<string | null>(null);
@@ -38,6 +45,21 @@ export default function WeddingMasterDashboard() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [quickAddView, setQuickAddView] = useState<string | null>(null);
   const [quickAddNonce, setQuickAddNonce] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsAuthChecked(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleLogin = (user: AuthUser) => {
+    saveAuth(user);
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    clearAuth();
+    setCurrentUser(null);
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -84,8 +106,6 @@ export default function WeddingMasterDashboard() {
     setQuickAddNonce((previous) => previous + 1);
   };
 
-  const { data } = useWeddingData();
-
   const baseEventData = activeEventDetailId ? eventsDatabase[activeEventDetailId] : null;
   const eventMeta = activeEventDetailId && data.eventMetas ? data.eventMetas[activeEventDetailId] : null;
   const activeEventData = baseEventData
@@ -107,6 +127,24 @@ export default function WeddingMasterDashboard() {
       }
     : null;
 
+  if (!isAuthChecked) {
+    return (
+      <div className="min-h-screen bg-[#fbf7f2] flex flex-col items-center justify-center p-4">
+        <div className="w-10 h-10 border-3 border-[#faece0] border-t-[#c98858] rounded-full animate-spin mb-4" />
+        <p className="text-sm font-serif font-semibold text-[#6f5a49]">Memuat Hari Bahagia A&M...</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <WeddingAuthGate
+        masterKey={data.settings.accessKey || "AM2027"}
+        onLogin={handleLogin}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#fbf7f2] print:block print:h-auto print:overflow-visible">
       <Sidebar
@@ -114,6 +152,8 @@ export default function WeddingMasterDashboard() {
         onSelectView={handleSelectSidebarView}
         isOpenMobile={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar print:overflow-visible print:h-auto">
@@ -123,6 +163,8 @@ export default function WeddingMasterDashboard() {
           onNavigate={handleSelectSidebarView}
           onQuickAdd={handleQuickAdd}
           isDashboard={!activeSupportingView && !activeEventDetailId && currentView === "overview"}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
 
         <main className="px-2.5 sm:px-6 md:px-10 pb-6 sm:pb-8 space-y-3 sm:space-y-5 w-full print:px-0 print:pb-0">

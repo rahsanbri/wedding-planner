@@ -80,6 +80,7 @@ export interface WeddingSettings {
   targetDate: string;
   targetDateLabel: string;
   guestTarget: number;
+  accessKey?: string;
 }
 
 export const WEDDING_STORAGE_KEY = "wedding-planner-data-v1";
@@ -88,6 +89,7 @@ export const weddingSettings: WeddingSettings = {
   targetDate: "2027-05-16T00:00:00+07:00",
   targetDateLabel: "16 Mei 2027",
   guestTarget: 450,
+  accessKey: "AM2027",
 };
 
 function cloneItems<T>(items: T[]): T[] {
@@ -200,6 +202,14 @@ export function mergeWeddingData(base: WeddingData, stored: unknown): WeddingDat
       storedSettings.guestTarget > 0
     ) {
       nextSettings.guestTarget = storedSettings.guestTarget;
+      hasUsableSettings = true;
+    }
+
+    if (
+      typeof storedSettings.accessKey === "string" &&
+      storedSettings.accessKey.trim().length > 0
+    ) {
+      nextSettings.accessKey = storedSettings.accessKey.trim();
       hasUsableSettings = true;
     }
 

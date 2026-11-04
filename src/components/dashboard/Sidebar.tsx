@@ -13,6 +13,7 @@ import {
   Settings,
   FileBarChart,
   Sparkles,
+  LogOut,
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,12 +24,15 @@ import {
   formatCompactRupiah,
   guestSummary,
 } from "@/lib/selectors";
+import type { AuthUser } from "@/lib/auth";
 
 interface SidebarProps {
   currentView: string;
   onSelectView: (view: string) => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
+  currentUser?: AuthUser | null;
+  onLogout?: () => void;
 }
 
 export const mainEvents = [
@@ -47,7 +51,14 @@ export const supportingTools = [
   { id: "report", name: "Laporan & Export", icon: FileBarChart },
 ];
 
-export function Sidebar({ currentView, onSelectView, isOpenMobile, onCloseMobile }: SidebarProps) {
+export function Sidebar({
+  currentView,
+  onSelectView,
+  isOpenMobile,
+  onCloseMobile,
+  currentUser,
+  onLogout,
+}: SidebarProps) {
   const { data } = useWeddingData();
 
   const badges = useMemo(() => {
@@ -232,30 +243,50 @@ export function Sidebar({ currentView, onSelectView, isOpenMobile, onCloseMobile
           </div>
         </div>
 
-        {/* Footer: A&M Profile */}
-        <div className="p-4 border-t border-[#ede4d8] bg-[#f8f3ec] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="px-2.5 h-8 rounded-full bg-[#3a281c] text-[#ffffff] font-bold text-xs flex items-center justify-center shadow-xs tracking-tight">
-              A&M
+        {/* Footer: User Profile */}
+        <div className="p-3.5 border-t border-[#ede4d8] bg-[#f8f3ec] flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-[#3a281c] text-[#ffffff] font-bold text-xs flex items-center justify-center shadow-xs tracking-tight shrink-0">
+              {currentUser ? currentUser.name.slice(0, 2).toUpperCase() : "A&M"}
             </div>
-            <div className="flex items-center gap-1.5 text-[10.5px] text-[#16a34a]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a] animate-pulse" />
-              <span className="font-semibold text-[#554437]">Wedding Active</span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-[#3a281c] leading-tight truncate">
+                {currentUser ? currentUser.name : "A&M"}
+              </p>
+              <div className="flex items-center gap-1.5 text-[10px] text-[#16a34a]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a] animate-pulse shrink-0" />
+                <span className="font-semibold text-[#554437] truncate">
+                  {currentUser ? currentUser.role : "Wedding Active"}
+                </span>
+              </div>
             </div>
           </div>
-          <button 
-            onClick={() => onSelectView("settings")}
-            aria-label="Buka pengaturan"
-            aria-current={currentView === "settings" ? "page" : undefined}
-            className={cn(
-              "p-1.5 rounded-lg transition-colors cursor-pointer",
-              currentView === "settings"
-                ? "bg-[#efe4d8] text-[#3a281c]"
-                : "text-[#6f5a49] hover:text-[#3a281c] hover:bg-[#efe4d8]"
+          <div className="flex items-center gap-0.5 shrink-0">
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                title="Keluar dari akun"
+                aria-label="Keluar dari akun"
+                className="p-1.5 rounded-lg text-[#7a6452] hover:text-[#e11d48] hover:bg-[#fae8e8] transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             )}
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+            <button 
+              onClick={() => onSelectView("settings")}
+              aria-label="Buka pengaturan"
+              aria-current={currentView === "settings" ? "page" : undefined}
+              className={cn(
+                "p-1.5 rounded-lg transition-colors cursor-pointer",
+                currentView === "settings"
+                  ? "bg-[#efe4d8] text-[#3a281c]"
+                  : "text-[#6f5a49] hover:text-[#3a281c] hover:bg-[#efe4d8]"
+              )}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </aside>
     </>
