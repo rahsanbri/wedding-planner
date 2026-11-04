@@ -167,7 +167,7 @@ export default function WeddingMasterDashboard() {
           onLogout={handleLogout}
         />
 
-        <main className="px-2.5 sm:px-6 md:px-10 pb-6 sm:pb-8 space-y-3 sm:space-y-5 w-full print:px-0 print:pb-0">
+        <main className="px-2.5 sm:px-6 md:px-10 pb-6 sm:pb-8 space-y-3 sm:space-y-5 lg:space-y-6 w-full print:px-0 print:pb-0">
           {activeSupportingView === "report" ? (
             <ReportPage
               onBack={() => {
