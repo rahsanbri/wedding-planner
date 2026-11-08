@@ -16,6 +16,7 @@ import type { MasterChecklistItem } from "@/data/checklistAndMoodboardData";
 import type { TimelineMilestone } from "@/data/timelineRoadmapData";
 import {
   createInitialWeddingData,
+  createEmptyWeddingData,
   defaultEventMetas,
   mergeWeddingData,
   WEDDING_STORAGE_KEY,
@@ -35,6 +36,8 @@ import {
   cloudSaveTimelineItem,
   cloudDeleteTimelineItem,
   cloudSaveSettings,
+  cloudClearAllData,
+  cloudSeedDemoData,
   subscribeToWeddingRealtime,
   mapGuestFromDb,
   mapBudgetItemFromDb,
@@ -65,7 +68,7 @@ interface WeddingDataContextValue {
   replaceData: (next: WeddingData) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (ids: string[]) => void;
-  resetData: () => void;
+  resetData: (mode?: "empty" | "demo") => Promise<void>;
   syncWithCloud: () => Promise<void>;
 }
 
@@ -138,11 +141,11 @@ export function WeddingDataProvider({ children }: { children: ReactNode }) {
       if (cloudData) {
         setData((current) => ({
           ...current,
-          guests: cloudData.guests && cloudData.guests.length > 0 ? cloudData.guests : current.guests,
-          budgetItems: cloudData.budget && cloudData.budget.length > 0 ? cloudData.budget : current.budgetItems,
-          vendors: cloudData.vendors && cloudData.vendors.length > 0 ? cloudData.vendors : current.vendors,
-          checklist: cloudData.checklist && cloudData.checklist.length > 0 ? cloudData.checklist : current.checklist,
-          timeline: cloudData.timeline && cloudData.timeline.length > 0 ? cloudData.timeline : current.timeline,
+          guests: cloudData.guests !== null ? cloudData.guests : current.guests,
+          budgetItems: cloudData.budget !== null ? cloudData.budget : current.budgetItems,
+          vendors: cloudData.vendors !== null ? cloudData.vendors : current.vendors,
+          checklist: cloudData.checklist !== null ? cloudData.checklist : current.checklist,
+          timeline: cloudData.timeline !== null ? cloudData.timeline : current.timeline,
           settings: cloudData.settings || current.settings,
         }));
         setCloudSyncStatus("synced");
@@ -171,11 +174,11 @@ export function WeddingDataProvider({ children }: { children: ReactNode }) {
         if (cloudData) {
           setData((current) => ({
             ...current,
-            guests: cloudData.guests && cloudData.guests.length > 0 ? cloudData.guests : current.guests,
-            budgetItems: cloudData.budget && cloudData.budget.length > 0 ? cloudData.budget : current.budgetItems,
-            vendors: cloudData.vendors && cloudData.vendors.length > 0 ? cloudData.vendors : current.vendors,
-            checklist: cloudData.checklist && cloudData.checklist.length > 0 ? cloudData.checklist : current.checklist,
-            timeline: cloudData.timeline && cloudData.timeline.length > 0 ? cloudData.timeline : current.timeline,
+            guests: cloudData.guests !== null ? cloudData.guests : current.guests,
+            budgetItems: cloudData.budget !== null ? cloudData.budget : current.budgetItems,
+            vendors: cloudData.vendors !== null ? cloudData.vendors : current.vendors,
+            checklist: cloudData.checklist !== null ? cloudData.checklist : current.checklist,
+            timeline: cloudData.timeline !== null ? cloudData.timeline : current.timeline,
             settings: cloudData.settings || current.settings,
           }));
           setCloudSyncStatus("synced");
@@ -457,8 +460,28 @@ export function WeddingDataProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const resetData = useCallback(() => {
-    setData(createInitialWeddingData());
+  const resetData = useCallback(async (mode: "empty" | "demo" = "empty") => {
+    const targetData =
+      mode === "empty" ? createEmptyWeddingData() : createInitialWeddingData();
+    setData(targetData);
+
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(WEDDING_STORAGE_KEY, JSON.stringify(targetData));
+      }
+    } catch (e) {
+      console.warn("Error saving to localStorage on reset:", e);
+    }
+
+    if (isSupabaseConfigured()) {
+      setCloudSyncStatus("syncing");
+      if (mode === "empty") {
+        await cloudClearAllData();
+      } else {
+        await cloudSeedDemoData(targetData);
+      }
+      setCloudSyncStatus("synced");
+    }
   }, []);
 
   const value = useMemo<WeddingDataContextValue>(

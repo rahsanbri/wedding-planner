@@ -6,6 +6,7 @@ import { eventsDatabase } from "../data/weddingEvents";
 import { timelineDatabase } from "../data/timelineRoadmapData";
 import {
   createInitialWeddingData,
+  createEmptyWeddingData,
   mergeWeddingData,
   weddingSettings,
 } from "./weddingStorage";
@@ -33,6 +34,21 @@ describe("createInitialWeddingData", () => {
     expect(first.budgetItems).not.toBe(second.budgetItems);
     first.budgetItems.pop();
     expect(second.budgetItems).toHaveLength(initialBudgetItems.length);
+  });
+});
+
+describe("createEmptyWeddingData", () => {
+  it("initializes an empty wedding data state ready for real input", () => {
+    const data = createEmptyWeddingData();
+
+    expect(data.budgetItems).toEqual([]);
+    expect(data.guests).toEqual([]);
+    expect(data.vendors).toEqual([]);
+    expect(data.checklist).toEqual([]);
+    expect(data.timeline).toEqual([]);
+    expect(data.settings.guestTarget).toBe(0);
+    expect(data.settings.targetDate).toBe(weddingSettings.targetDate);
+    expect(data.settings.accessKey).toBe(weddingSettings.accessKey);
   });
 });
 

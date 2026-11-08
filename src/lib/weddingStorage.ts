@@ -122,6 +122,29 @@ export function createInitialWeddingData(): WeddingData {
   };
 }
 
+export function createEmptyWeddingData(): WeddingData {
+  const eventTasks: Record<string, WeddingTask[]> = {};
+  const eventDocuments: Record<string, WeddingDocument[]> = {};
+
+  for (const eventId of Object.keys(eventsDatabase)) {
+    eventTasks[eventId] = [];
+    eventDocuments[eventId] = [];
+  }
+
+  return {
+    eventTasks,
+    eventDocuments,
+    eventMetas: { ...defaultEventMetas },
+    budgetItems: [],
+    guests: [],
+    vendors: [],
+    checklist: [],
+    timeline: [],
+    settings: { ...weddingSettings, guestTarget: 0 },
+    readNotificationIds: [],
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

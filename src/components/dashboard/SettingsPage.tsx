@@ -23,6 +23,7 @@ import {
   Save,
   ShieldCheck,
   Target,
+  Trash2,
   Upload,
   User,
   Users,
@@ -304,18 +305,69 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
     );
   };
 
-  const handleReset = () => {
+  const [resetting, setResetting] = useState(false);
+
+  const handleClearData = async () => {
     if (
-      confirm(
-        "Reset semua data ke contoh awal? Perubahan yang tersimpan akan hilang.",
+      !confirm(
+        "Apakah Anda yakin ingin MENGOSONGKAN semua data (daftar tamu, pos anggaran, vendor, dan checklist) baik di perangkat ini maupun di database Supabase Cloud?\n\nDashboard akan bersih dari data dummy dan siap diisi data asli pernikahan Anda.",
       )
     ) {
-      resetData();
+      return;
+    }
+
+    try {
+      setResetting(true);
+      await resetData("empty");
       setTargetDateInput(weddingSettings.targetDate.slice(0, 10));
       setGuestTargetInput(String(weddingSettings.guestTarget));
       setAccessKeyInput(weddingSettings.accessKey || "AM2027");
       setSaved(false);
-      setImportStatus(null);
+      setImportStatus({
+        type: "success",
+        message:
+          "Semua data dummy berhasil dikosongkan! Dashboard kini bersih dan siap diisi data asli pernikahan Anda.",
+      });
+    } catch (e) {
+      console.error(e);
+      setImportStatus({
+        type: "error",
+        message: "Gagal mengosongkan data. Silakan coba kembali.",
+      });
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleSeedDemoData = async () => {
+    if (
+      !confirm(
+        "Muat ulang data contoh (template dummy)? Data yang ada saat ini akan diganti dengan contoh data demo.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setResetting(true);
+      await resetData("demo");
+      setTargetDateInput(weddingSettings.targetDate.slice(0, 10));
+      setGuestTargetInput(String(weddingSettings.guestTarget));
+      setAccessKeyInput(weddingSettings.accessKey || "AM2027");
+      setSaved(false);
+      setImportStatus({
+        type: "success",
+        message:
+          "Data contoh (template demo) berhasil dimuat kembali ke browser dan Supabase.",
+      });
+    } catch (e) {
+      console.error(e);
+      setImportStatus({
+        type: "error",
+        message: "Gagal memuat data contoh. Silakan coba kembali.",
+      });
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -631,7 +683,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <button
             type="button"
             onClick={handleExport}
@@ -684,23 +736,46 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
 
           <button
             type="button"
-            onClick={handleReset}
-            className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-red-50/60 border border-red-100 hover:border-red-200 transition-colors text-left cursor-pointer"
+            disabled={resetting}
+            onClick={handleClearData}
+            className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-amber-50/70 border border-amber-200 hover:border-amber-300 transition-colors text-left cursor-pointer disabled:opacity-50"
           >
             <span className="flex items-center gap-3">
-              <span className="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
-                <RotateCcw className="w-4 h-4" />
+              <span className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <Trash2 className="w-4 h-4" />
               </span>
               <span>
-                <span className="block text-xs font-bold text-red-700">
-                  Reset ke Data Awal
+                <span className="block text-xs font-bold text-amber-900">
+                  {resetting ? "Mengosongkan..." : "Kosongkan Data Dummy"}
                 </span>
-                <span className="block text-[10.5px] text-red-600/80 mt-0.5">
-                  Semua perubahan akan hilang
+                <span className="block text-[10.5px] text-amber-700/80 mt-0.5">
+                  Mulai bersih dari nol (0 data)
                 </span>
               </span>
             </span>
-            <RotateCcw className="w-4 h-4 text-red-300" />
+            <Trash2 className="w-4 h-4 text-amber-400" />
+          </button>
+
+          <button
+            type="button"
+            disabled={resetting}
+            onClick={handleSeedDemoData}
+            className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-[#fdfaf7] border border-[#ede4d8] hover:border-[#dfc8b4] transition-colors text-left cursor-pointer disabled:opacity-50"
+          >
+            <span className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-lg bg-[#f0e4d7] text-[#805030] flex items-center justify-center shrink-0">
+                <RotateCcw className="w-4 h-4" />
+              </span>
+              <span>
+                <span className="block text-xs font-bold text-[#3a281c]">
+                  Isi Data Contoh (Demo)
+                </span>
+                <span className="block text-[10.5px] text-[#6f5a49] mt-0.5">
+                  Muat template referensi awal
+                </span>
+              </span>
+            </span>
+            <RotateCcw className="w-4 h-4 text-[#bdafa2]" />
           </button>
         </div>
 

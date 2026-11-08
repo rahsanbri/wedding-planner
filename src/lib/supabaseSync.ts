@@ -3,7 +3,7 @@ import { Guest, Vendor } from "@/data/supportingData";
 import { BudgetItem } from "@/data/budgetData";
 import { MasterChecklistItem } from "@/data/checklistAndMoodboardData";
 import { TimelineMilestone } from "@/data/timelineRoadmapData";
-import { WeddingSettings } from "@/lib/weddingStorage";
+import { WeddingData, WeddingSettings } from "@/lib/weddingStorage";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
 // ==========================================
@@ -236,6 +236,44 @@ export async function cloudDeleteTimelineItem(id: string) {
 export async function cloudSaveSettings(settings: WeddingSettings) {
   if (!supabase || !isSupabaseConfigured()) return;
   await supabase.from("wedding_settings").upsert(mapSettingsToDb(settings));
+}
+
+export async function cloudClearAllData(): Promise<boolean> {
+  if (!supabase || !isSupabaseConfigured()) return false;
+
+  try {
+    await Promise.all([
+      supabase.from("guests").delete().neq("id", "___never___"),
+      supabase.from("budget_items").delete().neq("id", "___never___"),
+      supabase.from("vendors").delete().neq("id", "___never___"),
+      supabase.from("checklist_items").delete().neq("id", "___never___"),
+      supabase.from("timeline_milestones").delete().neq("id", "___never___"),
+    ]);
+    return true;
+  } catch (error) {
+    console.error("Failed to clear cloud data:", error);
+    return false;
+  }
+}
+
+export async function cloudSeedDemoData(demoData: WeddingData): Promise<boolean> {
+  if (!supabase || !isSupabaseConfigured()) return false;
+
+  try {
+    await cloudClearAllData();
+    await Promise.all([
+      supabase.from("guests").upsert(demoData.guests.map(mapGuestToDb)),
+      supabase.from("budget_items").upsert(demoData.budgetItems.map(mapBudgetItemToDb)),
+      supabase.from("vendors").upsert(demoData.vendors.map(mapVendorToDb)),
+      supabase.from("checklist_items").upsert(demoData.checklist.map(mapChecklistItemToDb)),
+      supabase.from("timeline_milestones").upsert(demoData.timeline.map(mapTimelineToDb)),
+      supabase.from("wedding_settings").upsert(mapSettingsToDb(demoData.settings)),
+    ]);
+    return true;
+  } catch (error) {
+    console.error("Failed to seed demo data to cloud:", error);
+    return false;
+  }
 }
 
 // ==========================================
