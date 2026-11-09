@@ -36,6 +36,7 @@ import {
   cloudSaveTimelineItem,
   cloudDeleteTimelineItem,
   cloudSaveSettings,
+  cloudSaveAppMeta,
   cloudClearAllData,
   cloudSeedDemoData,
   subscribeToWeddingRealtime,
@@ -45,6 +46,7 @@ import {
   mapChecklistItemFromDb,
   mapTimelineFromDb,
   mapSettingsFromDb,
+  mapAppMetaFromDb,
 } from "@/lib/supabaseSync";
 
 type Updater<T> = T | ((previous: T) => T);
@@ -96,7 +98,7 @@ function readStoredData(): unknown {
 export function WeddingDataProvider({ children }: { children: ReactNode }) {
   // Initialize state directly with cached/localStorage data to avoid cascading render
   const [data, setData] = useState<WeddingData>(() => {
-    const initial = createInitialWeddingData();
+    const initial = createEmptyWeddingData();
     const stored = readStoredData();
     if (stored !== null) {
       return mergeWeddingData(initial, stored);
@@ -146,7 +148,10 @@ export function WeddingDataProvider({ children }: { children: ReactNode }) {
           vendors: cloudData.vendors !== null ? cloudData.vendors : current.vendors,
           checklist: cloudData.checklist !== null ? cloudData.checklist : current.checklist,
           timeline: cloudData.timeline !== null ? cloudData.timeline : current.timeline,
-          settings: cloudData.settings || current.settings,
+          settings: cloudData.settings ? { ...current.settings, ...cloudData.settings } : current.settings,
+          eventTasks: cloudData.appMeta?.eventTasks || current.eventTasks,
+          eventDocuments: cloudData.appMeta?.eventDocuments || current.eventDocuments,
+          eventMetas: cloudData.appMeta?.eventMetas || current.eventMetas,
         }));
         setCloudSyncStatus("synced");
       } else {
@@ -179,7 +184,10 @@ export function WeddingDataProvider({ children }: { children: ReactNode }) {
             vendors: cloudData.vendors !== null ? cloudData.vendors : current.vendors,
             checklist: cloudData.checklist !== null ? cloudData.checklist : current.checklist,
             timeline: cloudData.timeline !== null ? cloudData.timeline : current.timeline,
-            settings: cloudData.settings || current.settings,
+            settings: cloudData.settings ? { ...current.settings, ...cloudData.settings } : current.settings,
+            eventTasks: cloudData.appMeta?.eventTasks || current.eventTasks,
+            eventDocuments: cloudData.appMeta?.eventDocuments || current.eventDocuments,
+            eventMetas: cloudData.appMeta?.eventMetas || current.eventMetas,
           }));
           setCloudSyncStatus("synced");
         } else {
@@ -268,8 +276,20 @@ export function WeddingDataProvider({ children }: { children: ReactNode }) {
           };
         });
       } else if (table === "wedding_settings") {
-        const updated = mapSettingsFromDb(newRow);
-        setData((prev) => ({ ...prev, settings: updated }));
+        if (newRow?.id === "app_meta") {
+          const appMeta = mapAppMetaFromDb(newRow);
+          if (appMeta) {
+            setData((prev) => ({
+              ...prev,
+              eventTasks: appMeta.eventTasks,
+              eventDocuments: appMeta.eventDocuments,
+              eventMetas: appMeta.eventMetas || prev.eventMetas,
+            }));
+          }
+        } else {
+          const updated = mapSettingsFromDb(newRow);
+          setData((prev) => ({ ...prev, settings: { ...prev.settings, ...updated } }));
+        }
       }
 
       setTimeout(() => setCloudSyncStatus("synced"), 400);
@@ -286,26 +306,46 @@ export function WeddingDataProvider({ children }: { children: ReactNode }) {
   // Local & Cloud updaters
   const setEventTasks = useCallback(
     (eventId: string, updater: Updater<WeddingTask[]>) => {
-      setData((current) => ({
-        ...current,
-        eventTasks: {
+      setData((current) => {
+        const nextEventTasks = {
           ...current.eventTasks,
           [eventId]: resolveUpdater(current.eventTasks[eventId] ?? [], updater),
-        },
-      }));
+        };
+        if (isSupabaseConfigured()) {
+          void cloudSaveAppMeta({
+            eventTasks: nextEventTasks,
+            eventDocuments: current.eventDocuments,
+            eventMetas: current.eventMetas,
+          });
+        }
+        return {
+          ...current,
+          eventTasks: nextEventTasks,
+        };
+      });
     },
     [],
   );
 
   const setEventDocuments = useCallback(
     (eventId: string, updater: Updater<WeddingDocument[]>) => {
-      setData((current) => ({
-        ...current,
-        eventDocuments: {
+      setData((current) => {
+        const nextEventDocuments = {
           ...current.eventDocuments,
           [eventId]: resolveUpdater(current.eventDocuments[eventId] ?? [], updater),
-        },
-      }));
+        };
+        if (isSupabaseConfigured()) {
+          void cloudSaveAppMeta({
+            eventTasks: current.eventTasks,
+            eventDocuments: nextEventDocuments,
+            eventMetas: current.eventMetas,
+          });
+        }
+        return {
+          ...current,
+          eventDocuments: nextEventDocuments,
+        };
+      });
     },
     [],
   );
@@ -324,12 +364,20 @@ export function WeddingDataProvider({ children }: { children: ReactNode }) {
           picName: "",
           picPhone: "",
         };
+        const nextEventMetas = {
+          ...currentMetas,
+          [eventId]: { ...currentMeta, ...meta },
+        };
+        if (isSupabaseConfigured()) {
+          void cloudSaveAppMeta({
+            eventTasks: current.eventTasks,
+            eventDocuments: current.eventDocuments,
+            eventMetas: nextEventMetas,
+          });
+        }
         return {
           ...current,
-          eventMetas: {
-            ...currentMetas,
-            [eventId]: { ...currentMeta, ...meta },
-          },
+          eventMetas: nextEventMetas,
         };
       });
     },

@@ -3,8 +3,15 @@ import { Guest, Vendor } from "@/data/supportingData";
 import { BudgetItem } from "@/data/budgetData";
 import { MasterChecklistItem } from "@/data/checklistAndMoodboardData";
 import { TimelineMilestone } from "@/data/timelineRoadmapData";
-import { WeddingData, WeddingSettings } from "@/lib/weddingStorage";
+import { WeddingTask, WeddingDocument } from "@/data/weddingEvents";
+import { EventMeta, WeddingData, WeddingSettings } from "@/lib/weddingStorage";
 import { RealtimeChannel } from "@supabase/supabase-js";
+
+export interface CloudAppMeta {
+  eventTasks: Record<string, WeddingTask[]>;
+  eventDocuments: Record<string, WeddingDocument[]>;
+  eventMetas?: Record<string, EventMeta>;
+}
 
 // ==========================================
 // MAPPERS: DB (snake_case) <-> APP (camelCase)
@@ -151,6 +158,29 @@ export const mapSettingsToDb = (settings: WeddingSettings) => ({
   updated_at: new Date().toISOString(),
 });
 
+export const mapAppMetaFromDb = (row: Record<string, unknown>): CloudAppMeta | null => {
+  try {
+    const raw = row.target_date_label;
+    if (typeof raw !== "string" || !raw.trim().startsWith("{")) return null;
+    const parsed = JSON.parse(raw) as Partial<CloudAppMeta>;
+    return {
+      eventTasks: parsed.eventTasks || { gereja: [], prewedding: [], midodareni: [], resepsi: [] },
+      eventDocuments: parsed.eventDocuments || { gereja: [], prewedding: [], midodareni: [], resepsi: [] },
+      eventMetas: parsed.eventMetas,
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const mapAppMetaToDb = (meta: CloudAppMeta) => ({
+  id: "app_meta",
+  target_date: "app_meta",
+  target_date_label: JSON.stringify(meta),
+  guest_target: 0,
+  updated_at: new Date().toISOString(),
+});
+
 // ==========================================
 // SUPABASE API CRUD SERVICES
 // ==========================================
@@ -159,7 +189,7 @@ export async function fetchFullCloudWeddingData() {
   if (!supabase || !isSupabaseConfigured()) return null;
 
   try {
-    const [guestsRes, budgetRes, vendorsRes, checklistRes, timelineRes, settingsRes] =
+    const [guestsRes, budgetRes, vendorsRes, checklistRes, timelineRes, settingsRes, appMetaRes] =
       await Promise.all([
         supabase.from("guests").select("*").order("name"),
         supabase.from("budget_items").select("*").order("category"),
@@ -167,6 +197,7 @@ export async function fetchFullCloudWeddingData() {
         supabase.from("checklist_items").select("*").order("id"),
         supabase.from("timeline_milestones").select("*").order("id"),
         supabase.from("wedding_settings").select("*").eq("id", "primary").maybeSingle(),
+        supabase.from("wedding_settings").select("*").eq("id", "app_meta").maybeSingle(),
       ]);
 
     return {
@@ -176,6 +207,7 @@ export async function fetchFullCloudWeddingData() {
       checklist: checklistRes.data ? (checklistRes.data as Record<string, unknown>[]).map(mapChecklistItemFromDb) : null,
       timeline: timelineRes.data ? (timelineRes.data as Record<string, unknown>[]).map(mapTimelineFromDb) : null,
       settings: settingsRes.data ? mapSettingsFromDb(settingsRes.data as Record<string, unknown>) : null,
+      appMeta: appMetaRes.data ? mapAppMetaFromDb(appMetaRes.data as Record<string, unknown>) : null,
     };
   } catch (error) {
     console.error("Error fetching cloud wedding data:", error);
@@ -238,8 +270,18 @@ export async function cloudSaveSettings(settings: WeddingSettings) {
   await supabase.from("wedding_settings").upsert(mapSettingsToDb(settings));
 }
 
+export async function cloudSaveAppMeta(meta: CloudAppMeta) {
+  if (!supabase || !isSupabaseConfigured()) return;
+  await supabase.from("wedding_settings").upsert(mapAppMetaToDb(meta));
+}
+
 export async function cloudClearAllData(): Promise<boolean> {
   if (!supabase || !isSupabaseConfigured()) return false;
+
+  const emptyAppMeta: CloudAppMeta = {
+    eventTasks: { gereja: [], prewedding: [], midodareni: [], resepsi: [] },
+    eventDocuments: { gereja: [], prewedding: [], midodareni: [], resepsi: [] },
+  };
 
   try {
     await Promise.all([
@@ -248,6 +290,7 @@ export async function cloudClearAllData(): Promise<boolean> {
       supabase.from("vendors").delete().neq("id", "___never___"),
       supabase.from("checklist_items").delete().neq("id", "___never___"),
       supabase.from("timeline_milestones").delete().neq("id", "___never___"),
+      supabase.from("wedding_settings").upsert(mapAppMetaToDb(emptyAppMeta)),
     ]);
     return true;
   } catch (error) {
@@ -268,6 +311,13 @@ export async function cloudSeedDemoData(demoData: WeddingData): Promise<boolean>
       supabase.from("checklist_items").upsert(demoData.checklist.map(mapChecklistItemToDb)),
       supabase.from("timeline_milestones").upsert(demoData.timeline.map(mapTimelineToDb)),
       supabase.from("wedding_settings").upsert(mapSettingsToDb(demoData.settings)),
+      supabase.from("wedding_settings").upsert(
+        mapAppMetaToDb({
+          eventTasks: demoData.eventTasks,
+          eventDocuments: demoData.eventDocuments,
+          eventMetas: demoData.eventMetas,
+        })
+      ),
     ]);
     return true;
   } catch (error) {

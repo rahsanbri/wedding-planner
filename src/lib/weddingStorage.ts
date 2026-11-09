@@ -83,7 +83,7 @@ export interface WeddingSettings {
   accessKey?: string;
 }
 
-export const WEDDING_STORAGE_KEY = "wedding-planner-data-v1";
+export const WEDDING_STORAGE_KEY = "wedding-planner-data-v2";
 
 export const weddingSettings: WeddingSettings = {
   targetDate: "2027-05-16T00:00:00+07:00",

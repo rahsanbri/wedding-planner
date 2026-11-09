@@ -41,10 +41,12 @@ export function EventDetailPage({ event, onBack }: EventDetailPageProps) {
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("Persiapan");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
   const [newTaskPic, setNewTaskPic] = useState("Lead Planner");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editTaskTitle, setEditTaskTitle] = useState("");
   const [editTaskCategory, setEditTaskCategory] = useState("");
+  const [editTaskDueDate, setEditTaskDueDate] = useState("");
   const [editTaskPic, setEditTaskPic] = useState("");
 
   // Sub-Event Timeline Filter
@@ -78,6 +80,7 @@ export function EventDetailPage({ event, onBack }: EventDetailPageProps) {
     setEditingTaskId(task.id);
     setEditTaskTitle(task.title);
     setEditTaskCategory(task.category);
+    setEditTaskDueDate(task.dueDate);
     setEditTaskPic(task.pic);
   };
 
@@ -91,6 +94,7 @@ export function EventDetailPage({ event, onBack }: EventDetailPageProps) {
               ...task,
               title: editTaskTitle.trim(),
               category: editTaskCategory.trim() || task.category,
+              dueDate: editTaskDueDate.trim() || task.dueDate,
               pic: editTaskPic.trim() || task.pic,
             }
           : task
@@ -116,12 +120,13 @@ export function EventDetailPage({ event, onBack }: EventDetailPageProps) {
       title: newTaskTitle.trim(),
       category: newTaskCategory.trim() || "Persiapan",
       completed: false,
-      dueDate: "Menyesuaikan",
+      dueDate: newTaskDueDate.trim() || "Menyesuaikan",
       pic: newTaskPic.trim() || "Lead Planner",
       priority: "medium",
     };
     setEventTasks(event.id, (previous) => [newTask, ...previous]);
     setNewTaskTitle("");
+    setNewTaskDueDate("");
     setShowAddTask(false);
   };
 
@@ -329,19 +334,29 @@ export function EventDetailPage({ event, onBack }: EventDetailPageProps) {
                   type="text"
                   value={newTaskCategory}
                   onChange={(e) => setNewTaskCategory(e.target.value)}
-                  placeholder="Kategori"
+                  placeholder="Kategori (cth: Persiapan / Vendor)"
                   aria-label="Kategori to-do baru"
                   className="px-3.5 py-2 rounded-xl bg-[#fbf7f2] border border-[#ede4d8] text-xs text-[#3a281c] focus:outline-hidden focus:border-[#c98858]"
                 />
               </div>
-              <input
-                type="text"
-                value={newTaskPic}
-                onChange={(e) => setNewTaskPic(e.target.value)}
-                placeholder="Penanggung jawab (PIC)"
-                aria-label="PIC to-do baru"
-                className="w-full px-3.5 py-2 rounded-xl bg-[#fbf7f2] border border-[#ede4d8] text-xs text-[#3a281c] focus:outline-hidden focus:border-[#c98858]"
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                <input
+                  type="text"
+                  value={newTaskDueDate}
+                  onChange={(e) => setNewTaskDueDate(e.target.value)}
+                  placeholder="Target tanggal (cth: 10 Jan 2027 / H-30)"
+                  aria-label="Target tanggal to-do baru"
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#fbf7f2] border border-[#ede4d8] text-xs text-[#3a281c] focus:outline-hidden focus:border-[#c98858]"
+                />
+                <input
+                  type="text"
+                  value={newTaskPic}
+                  onChange={(e) => setNewTaskPic(e.target.value)}
+                  placeholder="Penanggung jawab (PIC)"
+                  aria-label="PIC to-do baru"
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#fbf7f2] border border-[#ede4d8] text-xs text-[#3a281c] focus:outline-hidden focus:border-[#c98858]"
+                />
+              </div>
               <div className="flex items-center justify-end gap-2">
                 <button
                   type="button"
@@ -375,29 +390,79 @@ export function EventDetailPage({ event, onBack }: EventDetailPageProps) {
                   )}
                 >
                   {isEditing ? (
-                    <form onSubmit={(e) => handleSaveEditTask(task.id, e)} className="flex-1 space-y-2.5" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editTaskTitle}
-                          onChange={(e) => setEditTaskTitle(e.target.value)}
-                          className="flex-1 px-3 py-1.5 rounded-lg bg-[#fbf7f2] border border-[#c98858] text-xs font-medium text-[#3a281c]"
-                          autoFocus
-                        />
-                        <button
-                          type="submit"
-                          className="p-1.5 rounded-lg bg-[#789d6e] text-white hover:brightness-105"
-                          title="Simpan Perubahan"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
+                    <form onSubmit={(e) => handleSaveEditTask(task.id, e)} className="flex-1 w-full space-y-2.5" onClick={(e) => e.stopPropagation()}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        <div className="sm:col-span-2 lg:col-span-1">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#7a6452] mb-1">
+                            Judul To-Do
+                          </label>
+                          <input
+                            type="text"
+                            value={editTaskTitle}
+                            onChange={(e) => setEditTaskTitle(e.target.value)}
+                            placeholder="Judul pekerjaan..."
+                            aria-label="Edit judul to-do"
+                            className="w-full px-3 py-1.5 rounded-lg bg-[#fbf7f2] border border-[#c98858] text-xs font-medium text-[#3a281c] focus:outline-hidden"
+                            autoFocus
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#7a6452] mb-1">
+                            Kategori
+                          </label>
+                          <input
+                            type="text"
+                            value={editTaskCategory}
+                            onChange={(e) => setEditTaskCategory(e.target.value)}
+                            placeholder="Kategori..."
+                            aria-label="Edit kategori to-do"
+                            className="w-full px-3 py-1.5 rounded-lg bg-[#fbf7f2] border border-[#ede4d8] focus:border-[#c98858] text-xs font-medium text-[#3a281c] focus:outline-hidden"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#7a6452] mb-1">
+                            Target Tanggal
+                          </label>
+                          <input
+                            type="text"
+                            value={editTaskDueDate}
+                            onChange={(e) => setEditTaskDueDate(e.target.value)}
+                            placeholder="Target tanggal..."
+                            aria-label="Edit target tanggal to-do"
+                            className="w-full px-3 py-1.5 rounded-lg bg-[#fbf7f2] border border-[#ede4d8] focus:border-[#c98858] text-xs font-medium text-[#3a281c] focus:outline-hidden"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#7a6452] mb-1">
+                            PIC
+                          </label>
+                          <input
+                            type="text"
+                            value={editTaskPic}
+                            onChange={(e) => setEditTaskPic(e.target.value)}
+                            placeholder="Penanggung jawab (PIC)..."
+                            aria-label="Edit PIC to-do"
+                            className="w-full px-3 py-1.5 rounded-lg bg-[#fbf7f2] border border-[#ede4d8] focus:border-[#c98858] text-xs font-medium text-[#3a281c] focus:outline-hidden"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-2 pt-1">
                         <button
                           type="button"
                           onClick={() => setEditingTaskId(null)}
-                          className="p-1.5 rounded-lg bg-[#ded3c5] text-[#3a281c] hover:bg-[#d4c8b8]"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#ded3c5] text-[#3a281c] hover:bg-[#d4c8b8] text-xs font-semibold cursor-pointer"
                           title="Batal"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5" />
+                          <span>Batal</span>
+                        </button>
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-[#789d6e] text-white hover:brightness-105 text-xs font-semibold cursor-pointer"
+                          title="Simpan Perubahan"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Simpan</span>
                         </button>
                       </div>
                     </form>

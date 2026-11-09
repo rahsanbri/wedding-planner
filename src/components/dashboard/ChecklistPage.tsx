@@ -67,6 +67,8 @@ export function ChecklistPage({ onBack, initialShowAddForm = false }: ChecklistP
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [editPhase, setEditPhase] = useState<MasterChecklistItem["phase"]>("H-90 s/d H-60");
+  const [editPillar, setEditPillar] = useState<MasterChecklistItem["pillar"]>("Resepsi");
   const [editPic, setEditPic] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
 
@@ -116,6 +118,8 @@ export function ChecklistPage({ onBack, initialShowAddForm = false }: ChecklistP
     e.stopPropagation();
     setEditingId(item.id);
     setEditTitle(item.title);
+    setEditPhase(item.phase);
+    setEditPillar(item.pillar);
     setEditPic(item.pic);
     setEditDueDate(item.dueDate);
   };
@@ -128,6 +132,8 @@ export function ChecklistPage({ onBack, initialShowAddForm = false }: ChecklistP
           ? {
               ...item,
               title: editTitle.trim() || item.title,
+              phase: editPhase,
+              pillar: editPillar,
               pic: editPic.trim() || item.pic,
               dueDate: editDueDate.trim() || item.dueDate,
             }
@@ -436,8 +442,33 @@ export function ChecklistPage({ onBack, initialShowAddForm = false }: ChecklistP
                           className="w-full px-2 py-1 bg-white border border-[#c98858] rounded text-xs"
                         />
                       </td>
-                      <td className="py-3 px-3 text-[#7a6452]">{item.phase}</td>
-                      <td className="py-3 px-3 text-[#7a6452]">{item.pillar}</td>
+                      <td className="py-3 px-3">
+                        <select
+                          value={editPhase}
+                          onChange={(e) => setEditPhase(e.target.value as MasterChecklistItem["phase"])}
+                          aria-label="Edit fase waktu checklist"
+                          className="px-2 py-1 bg-white border border-[#c98858] rounded text-xs text-[#3a281c]"
+                        >
+                          <option value="H-180 s/d H-120">H-180 s/d H-120</option>
+                          <option value="H-90 s/d H-60">H-90 s/d H-60</option>
+                          <option value="H-30 s/d H-14">H-30 s/d H-14</option>
+                          <option value="H-7 s/d Hari-H">H-7 s/d Hari-H</option>
+                        </select>
+                      </td>
+                      <td className="py-3 px-3">
+                        <select
+                          value={editPillar}
+                          onChange={(e) => setEditPillar(e.target.value as MasterChecklistItem["pillar"])}
+                          aria-label="Edit pilar acara checklist"
+                          className="px-2 py-1 bg-white border border-[#c98858] rounded text-xs text-[#3a281c]"
+                        >
+                          <option value="Gereja">Gereja</option>
+                          <option value="Pre-Wedding">Pre-Wedding</option>
+                          <option value="Midodareni">Midodareni</option>
+                          <option value="Resepsi">Resepsi</option>
+                          <option value="Umum / Finansial">Umum / Finansial</option>
+                        </select>
+                      </td>
                       <td className="py-3 px-3">
                         <input
                           type="text"
@@ -564,10 +595,36 @@ export function ChecklistPage({ onBack, initialShowAddForm = false }: ChecklistP
                     className="w-full px-2.5 py-1.5 bg-white border border-[#c98858] rounded-lg text-xs"
                   />
                   <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={editPhase}
+                      onChange={(event) => setEditPhase(event.target.value as MasterChecklistItem["phase"])}
+                      aria-label="Fase waktu checklist"
+                      className="px-2.5 py-1.5 bg-white border border-[#ede4d8] rounded-lg text-xs text-[#3a281c]"
+                    >
+                      <option value="H-180 s/d H-120">H-180 s/d H-120</option>
+                      <option value="H-90 s/d H-60">H-90 s/d H-60</option>
+                      <option value="H-30 s/d H-14">H-30 s/d H-14</option>
+                      <option value="H-7 s/d Hari-H">H-7 s/d Hari-H</option>
+                    </select>
+                    <select
+                      value={editPillar}
+                      onChange={(event) => setEditPillar(event.target.value as MasterChecklistItem["pillar"])}
+                      aria-label="Pilar acara checklist"
+                      className="px-2.5 py-1.5 bg-white border border-[#ede4d8] rounded-lg text-xs text-[#3a281c]"
+                    >
+                      <option value="Gereja">Gereja</option>
+                      <option value="Pre-Wedding">Pre-Wedding</option>
+                      <option value="Midodareni">Midodareni</option>
+                      <option value="Resepsi">Resepsi</option>
+                      <option value="Umum / Finansial">Umum / Finansial</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
                     <input
                       type="text"
                       value={editPic}
                       onChange={(event) => setEditPic(event.target.value)}
+                      placeholder="PIC..."
                       aria-label="PIC checklist"
                       className="px-2.5 py-1.5 bg-white border border-[#ede4d8] rounded-lg text-xs"
                     />
@@ -575,6 +632,7 @@ export function ChecklistPage({ onBack, initialShowAddForm = false }: ChecklistP
                       type="text"
                       value={editDueDate}
                       onChange={(event) => setEditDueDate(event.target.value)}
+                      placeholder="Batas waktu..."
                       aria-label="Batas waktu checklist"
                       className="px-2.5 py-1.5 bg-white border border-[#ede4d8] rounded-lg text-xs"
                     />
